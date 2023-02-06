@@ -1,4 +1,4 @@
-
+import java.util.ArrayList;
 import mcgui.*;
 
 /**
@@ -8,33 +8,76 @@ import mcgui.*;
  */
 public class ExampleCaster extends Multicaster {
 
-    /**
-     * No initializations needed for this simple one
-     */
+    // Token init
+    String Token;
+    int seqnum;
+    // Sendbuffer and count init
+    int count = 0;
+    String[] tosends = new String[20];
+    // recv buffer and count init
+    int nextdeliver = 1;
+    ExampleMessage[] pending = new ExampleMessage[200];
+    int pending_length = 0;
+
     public void init() {
         mcui.debug("The network has "+hosts+" hosts!");
+        // Token start with Node 0
+        if(id == 0){
+            bcom.basicsend(id,new ExampleMessage(id, "Token", 1));
+        }
+        
     }
         
-    /**
-     * The GUI calls this module to multicast a message
-     */
     public void cast(String messagetext) {
-        for(int i=0; i < hosts; i++) {
-            /* Sends to everyone except itself */
-            if(i != id) {
-                bcom.basicsend(i,new ExampleMessage(id, messagetext));
+        // tosends buffer, count is a tmp value here
+        tosends[count] = messagetext;
+        mcui.debug("The thing: \""+tosends[count]+"\"is added");
+        count += 1;
+
+        if (Token != null){
+            mcui.debug("Token is here~");
+            broadcast();
+        }
+    }
+
+    public void broadcast(){
+        for(int i = 0; i < count; i++){
+            mcui.debug("Sent out: \""+tosends[i]+"\"");
+            for(int n = 0; n < hosts; n++) {
+                bcom.basicsend(n,new ExampleMessage(id, tosends[i], seqnum));
+            }
+            seqnum+=1;
+        }
+        // reset tosends
+        for(int i = 0; i < tosends.length; i++){
+            tosends[i] = null;
+        }
+        count = 0;
+        // transfer Token
+        int next_id = (id + 1) % 3;
+        bcom.basicsend(next_id ,new ExampleMessage(id, Token, seqnum));
+        mcui.debug("Control Transfer: id: " + id + " trans to " + next_id + " seq " + seqnum);
+        this.Token = null;
+    }
+
+    // store another buffer and fetch out them by the sequence
+    public void basicreceive(int peer,Message message) {
+        if(((ExampleMessage)message).text.startsWith("Token")){
+            this.Token = ((ExampleMessage)message).text;
+            this.seqnum = ((ExampleMessage)message).seqnum;
+        }
+        else{
+            pending[pending_length] = (ExampleMessage)message;
+            pending_length+=1;
+            for(int i = 0; i < pending_length; i++){
+                if (pending[i].seqnum == nextdeliver){
+                    mcui.debug("Fetch out the " + nextdeliver + "number");
+                    mcui.deliver(pending[i].id, 
+                                pending[i].text, "received");
+                    nextdeliver += 1;
+                }
             }
         }
-        mcui.debug("Sent out: \""+messagetext+"\"");
-        mcui.deliver(id, messagetext, "from myself!");
-    }
-    
-    /**
-     * Receive a basic message
-     * @param message  The message received
-     */
-    public void basicreceive(int peer,Message message) {
-        mcui.deliver(peer, ((ExampleMessage)message).text);
     }
 
     /**

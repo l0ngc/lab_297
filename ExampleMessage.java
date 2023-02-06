@@ -7,12 +7,16 @@ import mcgui.*;
  * @author Andreas Larsson &lt;larandr@chalmers.se&gt;
  */
 public class ExampleMessage extends Message {
-        
+    
     String text;
-        
-    public ExampleMessage(int sender,String text) {
+    int seqnum;
+    int id;
+    public ExampleMessage(int sender,String text, int seqnum) {
         super(sender);
+        this.id = sender;
         this.text = text;
+        this.seqnum = seqnum;
+
     }
     
     /**
@@ -24,5 +28,8 @@ public class ExampleMessage extends Message {
         return text;
     }
     
+    public int getSeqnum() {
+        return seqnum;
+    }
     public static final long serialVersionUID = 0;
 }
