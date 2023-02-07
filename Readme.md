@@ -1,3 +1,4 @@
+## Instructions
 Set classpath
 $> export CLASSPATH="/chalmers/groups/cse-ds2/javapackages:."
 
@@ -12,5 +13,6 @@ $> java mcgui.Main ExampleCaster <node number> localhostsetup
 
 <node number> starts at 0
 
-
+## TODO:
+1. Now the deliver stuck because 
 
