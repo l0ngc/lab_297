@@ -1,10 +1,12 @@
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 import mcgui.*;
 
 /**
- * Simple example of how to use the Multicaster interface.
+ * Priviledged based broad alogorithm
  *
- * @author Andreas Larsson &lt;larandr@chalmers.se&gt;
+ * @author Jonas Hedlund; Long Cheng;
  */
 public class ExampleCaster extends Multicaster {
 
@@ -13,11 +15,12 @@ public class ExampleCaster extends Multicaster {
     int seqnum;
     // Sendbuffer and count init
     int count = 0;
-    String[] tosends = new String[20];
+    String[] tosends = new String[50];
     // recv buffer and count init
     int nextdeliver = 1;
     ExampleMessage[] pending = new ExampleMessage[200];
     int pending_length = 0;
+    Timer timer;
 
     public void init() {
         mcui.debug("The network has "+hosts+" hosts!");
@@ -25,6 +28,12 @@ public class ExampleCaster extends Multicaster {
         if(id == 0){
             bcom.basicsend(id,new ExampleMessage(id, "Token", 1));
         }
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask(){
+            public void run(){
+                token_trans();
+            }
+        },0 , 10);
         
     }
         
@@ -33,10 +42,15 @@ public class ExampleCaster extends Multicaster {
         tosends[count] = messagetext;
         mcui.debug("The thing: \""+tosends[count]+"\"is added");
         count += 1;
+    }
 
-        if (Token != null){
-            mcui.debug("Token is here~");
+    public void token_trans(){
+        if (this.Token != null){
             broadcast();
+            int next_id = (id + 1) % 3;
+            bcom.basicsend(next_id ,new ExampleMessage(id, Token, seqnum));
+            // mcui.debug("Control Transfer: id: " + id + " trans to " + next_id + " seq " + seqnum);
+            this.Token = null;
         }
     }
 
@@ -53,11 +67,6 @@ public class ExampleCaster extends Multicaster {
             tosends[i] = null;
         }
         count = 0;
-        // transfer Token
-        int next_id = (id + 1) % 3;
-        bcom.basicsend(next_id ,new ExampleMessage(id, Token, seqnum));
-        mcui.debug("Control Transfer: id: " + id + " trans to " + next_id + " seq " + seqnum);
-        this.Token = null;
     }
 
     // store another buffer and fetch out them by the sequence
