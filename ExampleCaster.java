@@ -33,7 +33,7 @@ public class ExampleCaster extends Multicaster {
             public void run(){
                 token_trans();
             }
-        },0 , 10);
+        },0 , 200);
         
     }
         
