@@ -12,12 +12,19 @@ public class ExampleCaster extends Multicaster {
     String Token;
     int seqnum;
     // Sendbuffer and count init
-    int count = 0;
-    String[] tosends = new String[20];
+    // int ptr_lev1 = 0;
+    // String[] tosends_lev1 = new String[20];
+    // int ptr_lev2 = 0;
+    // String[] tosends_lev2 = new String[200];
+
+    List<String> tosends = new ArrayList<String>();
+
     // recv buffer and count init
     int nextdeliver = 1;
     ExampleMessage[] pending = new ExampleMessage[200];
     int pending_length = 0;
+
+// check the buffers
 
     public void init() {
         mcui.debug("The network has "+hosts+" hosts!");
@@ -25,14 +32,14 @@ public class ExampleCaster extends Multicaster {
         if(id == 0){
             bcom.basicsend(id,new ExampleMessage(id, "Token", 1));
         }
-        
     }
         
     public void cast(String messagetext) {
         // tosends buffer, count is a tmp value here
-        tosends[count] = messagetext;
-        mcui.debug("The thing: \""+tosends[count]+"\"is added");
-        count += 1;
+        tosends.add(messagetext);
+        // tosends_lev2[ptr_lev2] = messagetext;
+        mcui.debug("The thing: \""+ tosends[ptr_lev2] +"\"is added");
+        // ptr_lev2 += 1;
 
         if (Token != null){
             mcui.debug("Token is here~");
@@ -41,19 +48,41 @@ public class ExampleCaster extends Multicaster {
     }
 
     public void broadcast(){
-        for(int i = 0; i < count; i++){
-            mcui.debug("Sent out: \""+tosends[i]+"\"");
+        // load first level beffer
+        // for(int i = 0; i < min(20, ptr_lev2); i++){
+        //     tosends_lev1[i] = tosends_lev2[(i + ptr_lev2)]
+        //     ptr_lev1 += 1;
+        // }
+        // for(int i = 0; i < min(20, ptr_lev2); i++){
+        //     tosends_lev1[i] = tosends_lev2[(i + ptr_lev2)]
+        //     ptr_lev1 += 1;
+        // }
+        // how to reset lev2 cache
+
+        for(int i = 0; i < 20; i++){
+            mcui.debug("Sent out: \""+tosends.get(i)+"\"");
             for(int n = 0; n < hosts; n++) {
-                bcom.basicsend(n,new ExampleMessage(id, tosends[i], seqnum));
+                bcom.basicsend(n,new ExampleMessage(id, tosends.get(i), seqnum));
             }
             seqnum+=1;
         }
-        // reset tosends
-        for(int i = 0; i < tosends.length; i++){
-            tosends[i] = null;
+        for(int i = 0; i < 20; i++){
+            tosends.remove(0);
         }
-        count = 0;
+        // // reset first level tosends
+        // for(int i = 0; i < tosends_lev1.length; i++){
+        //     tosends_lev1[i] = null;
+        // }
+        // ptr_lev1 = 0;
+
+        // reset second level tosends
+        // 
+        
         // transfer Token
+        token_trans();
+
+    }
+    public void token_trans() {
         int next_id = (id + 1) % 3;
         bcom.basicsend(next_id ,new ExampleMessage(id, Token, seqnum));
         mcui.debug("Control Transfer: id: " + id + " trans to " + next_id + " seq " + seqnum);
@@ -63,8 +92,13 @@ public class ExampleCaster extends Multicaster {
     // store another buffer and fetch out them by the sequence
     public void basicreceive(int peer,Message message) {
         if(((ExampleMessage)message).text.startsWith("Token")){
-            this.Token = ((ExampleMessage)message).text;
-            this.seqnum = ((ExampleMessage)message).seqnum;
+            if (tosends.isEmpty()){
+                token_trans();
+            }
+            else{
+                this.Token = ((ExampleMessage)message).text;
+                this.seqnum = ((ExampleMessage)message).seqnum;
+            }
         }
         else{
             pending[pending_length] = (ExampleMessage)message;
