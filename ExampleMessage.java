@@ -18,6 +18,7 @@ public class ExampleMessage extends Message {
         this.text = text;
         this.seqnum = seqnum;
         this.checksum = generateChecksum(text);
+        this.retry = 0;
     }
     
     /**

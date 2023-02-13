@@ -13,6 +13,9 @@ public class ExampleCaster extends Multicaster {
     int nextdeliver = 1;
     ExampleMessage[] pending = new ExampleMessage[200];
     int pending_length = 0;
+    // retrans
+    // private static final int MAX_RETRIES = 3;
+    int MAX_RETRIES = 3;
 
     public void init() {
         mcui.debug("The network has "+hosts+" hosts!");
@@ -75,6 +78,7 @@ public class ExampleCaster extends Multicaster {
             mcui.debug("Message corrupted, ignoring");
             return;
         }
+
         // receive token
         if(receivedMessage.text.startsWith("Token")){
             this.Token = receivedMessage.text;
@@ -83,14 +87,35 @@ public class ExampleCaster extends Multicaster {
         }
         // deliver message
         else{
-            pending[pending_length] = receivedMessage;
-            pending_length += 1;
+            boolean found = false;
+            for (int i = 0; i < pending_length; i++) {
+                if (pending[i].seqnum == receivedMessage.seqnum) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                pending[pending_length] = receivedMessage;
+                pending_length += 1;
+            }
             for(int i = 0; i < pending_length; i++){
                 if (pending[i].seqnum == nextdeliver){
                     mcui.debug("Deliver the " + nextdeliver + "number");
                     mcui.deliver(pending[i].id, pending[i].text, "received");
                     nextdeliver += 1;
                 }
+            }
+        }
+        retransmit();
+    }
+
+    private void retransmit() {
+        for (int i = 0; i < pending_length; i++) {
+            if (pending[i].retry < MAX_RETRIES) {
+                for (int n = 0; n < hosts; n++) {
+                    bcom.basicsend(n, pending[i]);
+                }
+                pending[i].retry++;
             }
         }
     }
