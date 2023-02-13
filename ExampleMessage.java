@@ -11,12 +11,13 @@ public class ExampleMessage extends Message {
     String text;
     int seqnum;
     int id;
+    int checksum;
     public ExampleMessage(int sender,String text, int seqnum) {
         super(sender);
         this.id = sender;
         this.text = text;
         this.seqnum = seqnum;
-
+        this.checksum = generateChecksum(text);
     }
     
     /**
@@ -31,5 +32,14 @@ public class ExampleMessage extends Message {
     public int getSeqnum() {
         return seqnum;
     }
+
+    private int generateChecksum(String text) {
+        int checksum = 0;
+        for (int i = 0; i < text.length(); i++) {
+            checksum += (int) text.charAt(i);
+        }
+        return checksum;
+    }
+
     public static final long serialVersionUID = 0;
 }

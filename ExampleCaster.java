@@ -60,12 +60,19 @@ public class ExampleCaster extends Multicaster {
     }
 
     // store another buffer and fetch out them by the sequence
-    public void basicreceive(int peer,Message message) {
+    public void basicreceive(int peer, Message message) {
+        // check sum
+        if (receivedMessage.checksum != generateChecksum(receivedMessage.text)) {
+            mcui.debug("Message corrupted, ignoring");
+            return;
+        }
+        // receive token
         if(((ExampleMessage)message).text.startsWith("Token")){
             this.Token = ((ExampleMessage)message).text;
             this.seqnum = ((ExampleMessage)message).seqnum;
             broadcast();
         }
+        // deliver message
         else{
             pending[pending_length] = (ExampleMessage)message;
             pending_length += 1;
